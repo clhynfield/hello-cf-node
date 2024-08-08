@@ -1,0 +1,7 @@
+---
+applications:
+  - name: hello-cf-node
+    buildpack: nodejs_buildpack
+    memory: 128M
+    disk: 256M
+    instances: 2
