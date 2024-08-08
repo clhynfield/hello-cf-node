@@ -1,6 +1,6 @@
 {
   "name": "hello-cf-node",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A hello world app for NodeJS running on Cloud Foundry",
   "main": "server.js",
   "scripts": {
@@ -12,5 +12,8 @@
     "url": "https://github.com/clhynfield/hello-cf-node"
   },
   "author": "@clayton",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": "20.x"
+  }
 }
