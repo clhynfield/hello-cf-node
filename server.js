@@ -27,10 +27,11 @@ const computeIntensiveTask = (n) => {
   return text;
 };
 
-const showResourceUsage = (res, startCpuUsage) => {
+const showInfoAndEnd = (res, startCpuUsage) => {
   res.statusCode = 200;
   res.setHeader("Content-Type", "text/html");
   res.write("<code>");
+  res.write(`version: ${process.env.npm_package_version}<br />\n`);
   res.write(
     '<a href="/compute">Worker</a> threads:  ' + workers.length + "<br />\n",
   );
@@ -116,7 +117,7 @@ const server = createServer((req, res) => {
       logRequest(req);
       break;
     default:
-      showResourceUsage(res, startCpuUsage);
+      showInfoAndEnd(res, startCpuUsage);
       logRequest(req);
       break;
   }
