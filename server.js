@@ -80,6 +80,10 @@ const consumeHalfMemoryFree = () => {
   list.push(new Array(arraySize).fill("x"));
 };
 
+const clearMemory = () => {
+  list.length = 0;
+};
+
 const showEnvironment = (res) => {
   const env = JSON.stringify(process.env, null, 2);
   res.statusCode = 200;
@@ -87,10 +91,6 @@ const showEnvironment = (res) => {
   res.write("<pre>");
   res.write(`${env}`);
   res.end("</pre>");
-};
-
-const clearMemory = () => {
-  list.length = 0;
 };
 
 const server = createServer((req, res) => {
