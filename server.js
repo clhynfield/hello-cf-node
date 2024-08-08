@@ -31,7 +31,7 @@ const showInfoAndEnd = (res, startCpuUsage) => {
   res.statusCode = 200;
   res.setHeader("Content-Type", "text/html");
   res.write("<code>");
-  res.write(`version: ${process.env.npm_package_version}<br />\n`);
+  res.write(`version: ${packageVersion()}<br />\n`);
   res.write(
     '<a href="/compute">Worker</a> threads:  ' + workers.length + "<br />\n",
   );
@@ -82,6 +82,10 @@ const consumeHalfMemoryFree = () => {
 
 const clearMemory = () => {
   list.length = 0;
+};
+
+const packageVersion = () => {
+  return process.env.npm_package_version;
 };
 
 const showEnvironment = (res) => {
