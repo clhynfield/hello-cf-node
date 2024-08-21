@@ -53,13 +53,37 @@ redisClient.on("error", (error) => {
 });
 redisClient.connect();
 
+const updateHeartbeat = async () => {
+  const instanceIndex = process.env.INSTANCE_INDEX || "0";
+  const timestamp = Date.now();
+  try {
+    await redisClient.hSet(
+      "server_heartbeats",
+      instanceIndex,
+      timestamp.toString(),
+    );
+  } catch (error) {
+    console.error("Error updating heartbeat:", error);
+  }
+};
+
+setInterval(updateHeartbeat, 1000); // 1000 ms = 1 second
+
 const showInfoAndEnd = async (res) => {
   const visitorCount = await incrementCounter();
+  const instanceIndex = process.env.INSTANCE_INDEX || "0";
+  const heartbeat = await redisClient.hGet("server_heartbeats", instanceIndex);
+  const lastHeartbeat = heartbeat
+    ? `${Math.floor((Date.now() - parseInt(heartbeat)) / 1000)} seconds ago`
+    : "N/A";
+
   res.statusCode = 200;
   res.setHeader("Content-Type", "text/html");
   res.write("<code>");
   res.write(`version: ${packageVersion()}<br />\n`);
   res.write(`Visitor count: ${visitorCount}<br />\n`);
+  res.write(`Instance Index: ${instanceIndex}<br />\n`);
+  res.write(`Last Heartbeat: ${lastHeartbeat}<br />\n`);
   res.write(
     '<a href="/compute">Worker</a> threads:  ' + workers.length + "<br />\n",
   );
@@ -161,6 +185,24 @@ app.get("/env", (req, res) => {
 
 app.get("/", async (req, res) => {
   await showInfoAndEnd(res);
+  logRequest(req);
+});
+
+app.get("/heartbeats", async (req, res) => {
+  try {
+    const heartbeats = await redisClient.hGetAll("server_heartbeats");
+    const currentTime = Date.now();
+    const formattedHeartbeats = Object.entries(heartbeats).map(
+      ([instance, timestamp]) => {
+        const lastBeat = parseInt(timestamp);
+        const secondsAgo = Math.floor((currentTime - lastBeat) / 1000);
+        return `Instance ${instance}: ${secondsAgo} seconds ago`;
+      },
+    );
+    res.send(formattedHeartbeats.join("<br>"));
+  } catch (error) {
+    res.status(500).send("Error fetching heartbeats: " + error.message);
+  }
   logRequest(req);
 });
 
