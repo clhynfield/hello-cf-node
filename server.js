@@ -1,6 +1,7 @@
 const express = require("express");
 const { cpuUsage, memoryUsage } = require("node:process");
 const { Worker } = require("worker_threads");
+const redis = require("redis");
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -27,11 +28,38 @@ const computeIntensiveTask = (n) => {
   return text;
 };
 
-const showInfoAndEnd = (res) => {
+const getRedisUrl = () => {
+  if (process.env.VCAP_SERVICES) {
+    const vcapServices = JSON.parse(process.env.VCAP_SERVICES);
+    const pRedis = vcapServices["p-redis"];
+    if (pRedis.length > 0) {
+      const redisCreds = pRedis[0].credentials;
+      return `redis://:${redisCreds.password}@${redisCreds.host}:${redisCreds.port}`;
+    }
+  }
+  return "redis://localhost:6379";
+};
+
+const redisClient = redis.createClient({
+  url: getRedisUrl(),
+});
+console.log("Redis URL:", getRedisUrl());
+redisClient.on("error", (error) => {
+  if (error) {
+    console.error("ERROR***", error);
+  } else {
+    console.log("Redis connect.");
+  }
+});
+redisClient.connect();
+
+const showInfoAndEnd = async (res) => {
+  const visitorCount = await incrementCounter();
   res.statusCode = 200;
   res.setHeader("Content-Type", "text/html");
   res.write("<code>");
   res.write(`version: ${packageVersion()}<br />\n`);
+  res.write(`Visitor count: ${visitorCount}<br />\n`);
   res.write(
     '<a href="/compute">Worker</a> threads:  ' + workers.length + "<br />\n",
   );
@@ -88,6 +116,16 @@ const packageVersion = () => {
   return process.env.npm_package_version;
 };
 
+const incrementCounter = async () => {
+  try {
+    const value = await redisClient.incr("visitor_count");
+    return value;
+  } catch (error) {
+    console.error("Redis error:", error);
+    return null;
+  }
+};
+
 const showEnvironment = (res) => {
   const env = JSON.stringify(process.env, null, 2);
   res.statusCode = 200;
@@ -121,8 +159,8 @@ app.get("/env", (req, res) => {
   logRequest(req);
 });
 
-app.get("/", (req, res) => {
-  showInfoAndEnd(res);
+app.get("/", async (req, res) => {
+  await showInfoAndEnd(res);
   logRequest(req);
 });
 

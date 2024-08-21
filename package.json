@@ -1,6 +1,6 @@
 {
   "name": "hello-cf-node",
-  "version": "2.1.1",
+  "version": "3.0.0",
   "description": "A hello world app for NodeJS running on Cloud Foundry",
   "main": "server.js",
   "scripts": {
@@ -17,6 +17,7 @@
     "node": "20.x"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "redis": "^4.7.0"
   }
 }
