@@ -1,8 +1,8 @@
-const { createServer } = require("node:http");
+const express = require("express");
 const { cpuUsage, memoryUsage } = require("node:process");
 const { Worker } = require("worker_threads");
 
-// const hostname = "127.0.0.1";
+const app = express();
 const port = process.env.PORT || 8080;
 const list = [];
 const workers = [];
@@ -27,7 +27,7 @@ const computeIntensiveTask = (n) => {
   return text;
 };
 
-const showInfoAndEnd = (res, startCpuUsage) => {
+const showInfoAndEnd = (res) => {
   res.statusCode = 200;
   res.setHeader("Content-Type", "text/html");
   res.write("<code>");
@@ -97,36 +97,35 @@ const showEnvironment = (res) => {
   res.end("</pre>");
 };
 
-const server = createServer((req, res) => {
-  let startCpuUsage = cpuUsage();
-  switch (req.url) {
-    case "/leak":
-      consumeHalfMemoryFree();
-      redirectToRoot(res);
-      logRequest(req);
-      break;
-    case "/clear":
-      clearMemory();
-      redirectToRoot(res);
-      logRequest(req);
-      break;
-    case "/compute":
-      text = computeIntensiveTask();
-      redirectToRoot(res);
-      logRequest(req);
-      break;
-    case "/env":
-      text = computeIntensiveTask();
-      showEnvironment(res);
-      logRequest(req);
-      break;
-    default:
-      showInfoAndEnd(res, startCpuUsage);
-      logRequest(req);
-      break;
-  }
+app.get("/leak", (req, res) => {
+  consumeHalfMemoryFree();
+  redirectToRoot(res);
+  logRequest(req);
 });
 
-server.listen(port, () => {
+app.get("/clear", (req, res) => {
+  clearMemory();
+  redirectToRoot(res);
+  logRequest(req);
+});
+
+app.get("/compute", (req, res) => {
+  text = computeIntensiveTask();
+  redirectToRoot(res);
+  logRequest(req);
+});
+
+app.get("/env", (req, res) => {
+  text = computeIntensiveTask();
+  showEnvironment(res);
+  logRequest(req);
+});
+
+app.get("/", (req, res) => {
+  showInfoAndEnd(res);
+  logRequest(req);
+});
+
+app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}/`);
 });
