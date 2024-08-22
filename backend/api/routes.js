@@ -105,7 +105,7 @@ const updateHeartbeat = async () => {
 setInterval(updateHeartbeat, 1000); // 1000 ms = 1 second
 
 const computeIntensiveTask = (n) => {
-  const worker = new Worker("./compute.js", { workerData: 46 });
+  const worker = new Worker("./backend/compute.js", { workerData: 46 });
   workers.push(worker);
   let text = "";
   worker.on("message", (result) => {
