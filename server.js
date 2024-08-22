@@ -172,9 +172,13 @@ const showInfoAndEnd = async (res) => {
 
   // Display instance info in a table with swapped rows and columns
   res.write("<table border='1'>");
-  res.write("<tr><th>Metric</th>");
+  res.write("<tr>");
+  res.write('<th rowspan="2">Metric</th>');
+  res.write(`<th colspan="${allInstanceIndices.length + 1}">Instance</th>`);
+  res.write("</tr>");
+  res.write("<tr>");
   allInstanceIndices.forEach((index) => {
-    res.write(`<th>Instance ${index}</th>`);
+    res.write(`<th>${index}</th>`);
   });
   res.write("<th>Total</th></tr>");
 
@@ -191,7 +195,7 @@ const showInfoAndEnd = async (res) => {
     allInstanceInfo.forEach((info) => {
       res.write(`<td>${info[metric]}</td>`);
     });
-    res.write(`<td>${aggregatedInfo[metric].toFixed(0)}</td></tr>`);
+    res.write(`<td>${aggregatedInfo[metric].toFixed(0)}</td></tr>\n`);
   });
 
   res.write("<tr><td>Last Update (seconds ago)</td>");
@@ -201,9 +205,9 @@ const showInfoAndEnd = async (res) => {
       : "N/A";
     res.write(`<td>${lastUpdate}</td>`);
   });
-  res.write("<td>N/A</td></tr>");
+  res.write("<td>N/A</td></tr>\n");
 
-  res.write("</table>");
+  res.write("</table>\n");
 
   res.write("<br />\n");
   res.write('<a href="/env">Environment</a> variables<br />\n');
