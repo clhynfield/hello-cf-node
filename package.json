@@ -4,8 +4,15 @@
   "description": "A hello world app for NodeJS running on Cloud Foundry",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon",
     "start": "node server.js"
+  },
+  "nodemonConfig": {
+    "watch": [
+      "."
+    ],
+    "exec": "npm start",
+    "ext": "js,json,html,pug,css"
   },
   "repository": {
     "type": "git",
@@ -17,8 +24,11 @@
     "node": "20.x"
   },
   "dependencies": {
+    "body-parser": "^1.19.0",
     "express": "^4.19.2",
-    "redis": "^4.7.0",
-    "body-parser": "^1.19.0"
+    "redis": "^4.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
   }
 }
