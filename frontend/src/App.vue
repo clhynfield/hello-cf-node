@@ -3,7 +3,10 @@
         <h1>Hello CF Node</h1>
         <p>Visitor count: {{ info.visitorCount }}</p>
         <p>Instance Index: {{ info.instanceIndex }}</p>
-        <p>Last Heartbeat: {{ info.lastUpdate }}</p>
+        <p>
+            Last Heartbeat:
+            {{ Math.floor(Date.now() - parseInt(info.lastUpdate)) }} ms ago
+        </p>
         <p>Worker Threads: {{ info.workerThreads }}</p>
         <p>Memory Used: {{ info.memoryUsed }}</p>
         <p>Memory Free: {{ info.memoryFree }}</p>
