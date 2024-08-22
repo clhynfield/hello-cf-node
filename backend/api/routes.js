@@ -1,59 +1,20 @@
 const express = require("express");
-const redis = require("redis");
 const { cpuUsage, memoryUsage } = require("node:process");
 const { Worker } = require("worker_threads");
+const {
+  initCache,
+  cacheSet,
+  cacheGetAll,
+  incr,
+  publish,
+} = require("../instanceInfoCache");
 
 const list = [];
 const workers = [];
 
 const router = express.Router();
-const getRedisUrl = () => {
-  if (process.env.VCAP_SERVICES) {
-    const vcapServices = JSON.parse(process.env.VCAP_SERVICES);
-    const pRedis = vcapServices["p-redis"];
-    if (pRedis.length > 0) {
-      const redisCreds = pRedis[0].credentials;
-      return `redis://:${redisCreds.password}@${redisCreds.host}:${redisCreds.port}`;
-    }
-  }
-  return "redis://localhost:6379";
-};
-console.log("Redis URL:", getRedisUrl());
-
-const redisClient = redis.createClient({
-  url: getRedisUrl(),
-});
-
-redisClient.on("error", (error) => {
-  if (error) {
-    console.error("ERROR***", error);
-  } else {
-    console.log("Redis connect.");
-  }
-});
-const redisSubscriber = redisClient.duplicate();
-
-redisClient.on("error", (error) => {
-  console.error("Redis client error:", error);
-});
-
-redisSubscriber.on("message", (channel, message) => {
-  console.log(`Received message on channel ${channel}: ${message}`);
-});
-
-async function initRedis() {
-  await redisClient.connect();
-  await redisSubscriber.connect();
-  console.log("Redis connected.");
-
-  const instanceIndex = process.env.INSTANCE_INDEX || "0";
-  await redisSubscriber.subscribe(`instance:${instanceIndex}`, handleMessage);
-}
-
-initRedis().catch(console.error);
 
 function handleMessage(message, channel) {
-  console.log(`Received message on channel ${channel}: ${message}`);
   const instruction = JSON.parse(message);
 
   switch (instruction.type) {
@@ -67,9 +28,11 @@ function handleMessage(message, channel) {
       computeIntensiveTask(46); // Using a default value of 46
       break;
     default:
-      console.log(`Unknown instruction type: ${instruction.type}`);
+      console.error(`Unknown instruction type: ${instruction.type}`);
   }
 }
+
+initCache(handleMessage).catch(console.error);
 
 async function updateInstanceInfo() {
   const instanceIndex = process.env.INSTANCE_INDEX || "0";
@@ -80,22 +43,21 @@ async function updateInstanceInfo() {
     memoryTotal: (memoryLimitBytes() / 1024 / 1024).toFixed(2),
     lastUpdate: Date.now().toString(),
   };
-  await redisClient.hSet(`instance:${instanceIndex}:info`, info);
+  console.log(
+    `Saving to cache key instance:${instanceIndex}:info ${JSON.stringify(info)}`,
+  );
+  await cacheSet(`instance:${instanceIndex}:info`, info);
 }
 
 async function getInstanceInfo(instanceIndex) {
-  return await redisClient.hGetAll(`instance:${instanceIndex}:info`);
+  return await cacheGetAll(`instance:${instanceIndex}:info`);
 }
 
 const updateHeartbeat = async () => {
   const instanceIndex = process.env.INSTANCE_INDEX || "0";
   const timestamp = Date.now();
   try {
-    await redisClient.hSet(
-      "server_heartbeats",
-      instanceIndex,
-      timestamp.toString(),
-    );
+    // await cacheSet(`instance:${instanceIndex}:heartbeat`, timestamp.toString());
     await updateInstanceInfo();
   } catch (error) {
     console.error("Error updating heartbeat or instance info:", error);
@@ -149,7 +111,7 @@ const clearMemory = () => {
 
 const incrementCounter = async () => {
   try {
-    const value = await redisClient.incr("visitor_count");
+    const value = await incr("visitor_count");
     return value;
   } catch (error) {
     console.error("Redis error:", error);
@@ -163,7 +125,7 @@ const logRequest = (req) => {
 
 router.get("/info", async (req, res) => {
   try {
-    const visitorCount = await redisClient.incr("visitor_count");
+    const visitorCount = await incr("visitor_count");
     const instanceIndex = process.env.INSTANCE_INDEX || "0";
     let info = await getInstanceInfo(instanceIndex);
     info.version = process.env.npm_package_version;
@@ -172,6 +134,7 @@ router.get("/info", async (req, res) => {
     res.json(info);
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
+    console.log("Error getting instance info:", error);
   }
 });
 
@@ -181,7 +144,7 @@ router.post("/action", async (req, res) => {
 
   logRequest(req);
   try {
-    await redisClient.publish(`instance:${instanceIndex}`, message);
+    await publish(`instance:${instanceIndex}`, message);
   } catch (error) {
     console.error("Error publishing action:", error);
     // res.status(500).send("Error performing action");
