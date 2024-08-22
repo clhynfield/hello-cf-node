@@ -193,9 +193,9 @@ const showInfoAndEnd = async (res) => {
   metrics.forEach((metric, i) => {
     res.write(`<tr><td>${metricNames[i]}</td>`);
     allInstanceInfo.forEach((info) => {
-      res.write(`<td>${info[metric]}</td>`);
+      res.write(`<td>${Math.round(info[metric])}</td>`);
     });
-    res.write(`<td>${aggregatedInfo[metric].toFixed(0)}</td></tr>\n`);
+    res.write(`<td>${Math.round(aggregatedInfo[metric])}</td></tr>\n`);
   });
 
   res.write("<tr><td>Last Update (seconds ago)</td>");
