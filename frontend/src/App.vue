@@ -15,28 +15,44 @@
 </template>
 
 <script>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 
 export default {
     name: "App",
     setup() {
         const info = ref({});
+        let refreshInterval;
 
         const fetchInfo = async () => {
-            const response = await fetch("/api/info");
-            info.value = await response.json();
+            try {
+                const response = await fetch("/api/info");
+                info.value = await response.json();
+            } catch (error) {
+                console.error("Error fetching info:", error);
+            }
         };
 
         const performAction = async (action) => {
-            await fetch("/api/action", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action }),
-            });
-            await fetchInfo();
+            try {
+                await fetch("/api/action", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ instanceIndex: 0, action: action }),
+                });
+                await fetchInfo();
+            } catch (error) {
+                console.error("Error performing action:", error);
+            }
         };
 
-        onMounted(fetchInfo);
+        onMounted(() => {
+            fetchInfo(); // Initial fetch
+            refreshInterval = setInterval(fetchInfo, 1000); // Refresh every 5 seconds
+        });
+
+        onUnmounted(() => {
+            clearInterval(refreshInterval); // Clean up the interval when the component is unmounted
+        });
 
         return { info, performAction };
     },
