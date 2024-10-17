@@ -45,7 +45,14 @@ async function initCache(handleMessage) {
 }
 
 const cacheSet = async (key, value) => {
-  await redisClient.hSet(key, value);
+  // Really ought to make the expiration feature explicit in the function signature
+  redisClient
+    .hSet(key, value, {
+      EX: 300,
+    })
+    .catch((err) => {
+      console.error("Error setting key:", err);
+    });
 };
 
 const cacheGetAll = async (key) => {
